@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+server.log
+debug_output.txt
+final_verify.txt
+working_model_name.txt

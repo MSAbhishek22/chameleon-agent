@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE CHAMELEON | Agentic Honey-Pot</title>
+    <style>
+        :root {
+            --neon-green: #0f0;
+            --dark-bg: #0a0a0a;
+            --panel-bg: #111;
+            --border-color: #333;
+            --text-color: #ddd;
+            --scam-alert: #ff0055;
+        }
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            width: 100%;
+            gap: 2px;
+            background-color: var(--border-color);
+        }
+        .chat-section {
+            background-color: var(--panel-bg);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .intel-section {
+            background-color: var(--panel-bg);
+            border-left: 1px solid var(--neon-green);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Chat Area */
+        #chat-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            margin-bottom: 20px;
+            background: #000;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            max-width: 80%;
+        }
+        .msg-user {
+            background-color: #222;
+            color: #fff;
+            align-self: flex-start;
+            border-left: 3px solid #666;
+        }
+        .msg-agent {
+            background-color: #002200;
+            color: var(--neon-green);
+            align-self: flex-end;
+            border-right: 3px solid var(--neon-green);
+            text-align: right;
+            margin-left: auto;
+        }
+        .msg-system {
+            text-align: center;
+            color: #555;
+            font-size: 0.8em;
+            margin: 5px 0;
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex-grow: 1;
+            background: #000;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 10px;
+            font-family: inherit;
+        }
+        button {
+            background: var(--neon-green);
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Intel Panel */
+        h2 {
+            margin-top: 0;
+            color: var(--neon-green);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .data-row {
+            margin-bottom: 15px;
+        }
+        .label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .value {
+            font-size: 1.1em;
+            color: #fff;
+            word-break: break-all;
+        }
+        .scam-detected {
+            color: var(--scam-alert);
+            font-weight: bold;
+            font-size: 1.2em;
+            text-shadow: 0 0 5px var(--scam-alert);
+            display: none; /* Hidden by default */
+        }
+        
+        /* Scanline effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="chat-section">
+        <h2>>> INTERCEPTION NODE_01</h2>
+        <div id="chat-window">
+            <div class="msg-system">SYSTEM INITIALIZED. WAITING FOR CONNECTION...</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Simulate incoming scammer message..." autocomplete="off">
+            <button onclick="sendMessage()">SEND</button>
+        </div>
+    </div>
+
+    <div class="intel-section">
+        <h2>>> INTELLIGENCE</h2>
+        
+        <div class="data-row">
+            <div class="label">STATUS</div>
+            <div class="value" id="status-display">MONITORING</div>
+        </div>
+
+        <div class="data-row">
+            <div class="label">SCAM TYPE</div>
+            <div class="value" id="scam-type">--</div>
+            <div id="alert-box" class="scam-detected">! SCAM DETECTED !</div>
+        </div>
+        
+        <div class="data-row">
+            <div class="label">CONFIDENCE</div>
+            <div class="value" id="confidence">0.0%</div>
+        </div>
+
+        <div class="data-row">
+            <div class="label">TARGET BANK ACCOUNT</div>
+            <div class="value" id="bank-acc">--</div>
+        </div>
+        
+        <div class="data-row">
+            <div class="label">TARGET UPI ID</div>
+            <div class="value" id="upi-id">--</div>
+        </div>
+
+        <div class="data-row">
+            <div class="label">EXTRACTED PHONE</div>
+            <div class="value" id="phone">--</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const conversationId = "web_session_" + Date.now();
+    const API_KEY = "test_key"; // Using the permissive check in backend
+
+    async function sendMessage() {
+        const input = document.getElementById("userInput");
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Add user message to UI
+        addMessage("User (Scammer)", message, 'msg-user');
+        input.value = "";
+        
+        // Show typing indicator
+        const typingId = addMessage("Agent", "...", 'msg-agent');
+
+        try {
+            const response = await fetch("/honeypot", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-api-key": API_KEY
+                },
+                body: JSON.stringify({
+                    conversation_id: conversationId,
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+            
+            // Remove typing indicator
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.remove();
+
+            // Add agent response
+            addMessage("The Chameleon", data.response, 'msg-agent');
+            
+            // Update Intel
+            updateIntel(data);
+
+        } catch (error) {
+            console.error(error);
+            const typingEl = document.getElementById(typingId);
+            if(typingEl) typingEl.innerText = "CONNECTION ERROR";
+        }
+    }
+
+    function addMessage(sender, text, className) {
+        const chat = document.getElementById("chat-window");
+        const div = document.createElement("div");
+        const id = "msg_" + Date.now();
+        div.id = id;
+        div.className = `message ${className}`;
+        div.innerText = `${text}`;
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
+        return id;
+    }
+
+    function updateIntel(data) {
+        if (data.scam_detected) {
+            document.getElementById("status-display").innerText = "ENGAGED";
+            document.getElementById("status-display").style.color = "var(--scam-alert)";
+            document.getElementById("alert-box").style.display = "block";
+        }
+
+        const intel = data.intelligence;
+        
+        document.getElementById("scam-type").innerText = intel.scam_type ? intel.scam_type.toUpperCase() : "--";
+        document.getElementById("confidence").innerText = (intel.confidence_score * 100).toFixed(1) + "%";
+        
+        if (intel.bank_account) document.getElementById("bank-acc").style.color = "var(--neon-green)";
+        document.getElementById("bank-acc").innerText = intel.bank_account || "--";
+        
+        if (intel.upi_id) document.getElementById("upi-id").style.color = "var(--neon-green)";
+        document.getElementById("upi-id").innerText = intel.upi_id || "--";
+        
+        if (intel.phone_number) document.getElementById("phone").style.color = "var(--neon-green)";
+        document.getElementById("phone").innerText = intel.phone_number || "--";
+    }
+
+    // Allow Enter key to send
+    document.getElementById("userInput").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -5,3 +5,4 @@ google-generativeai
 pydantic
 requests
 regex
+gunicorn

@@ -1,7 +1,13 @@
 import google.generativeai as genai
 from typing import List, Dict, Any
+import asyncio
+import concurrent.futures
 from app.config import GEMINI_API_KEY
 from app.personas import PersonaManager
+
+# Configure Gemini once at module load
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 class ConversationManager:
     """
@@ -10,6 +16,7 @@ class ConversationManager:
     
     # In-memory storage for MVP. For production/scaling, use Redis.
     _states = {}
+    _executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
     @classmethod
     def get_state(cls, conversation_id: str) -> Dict[str, Any]:
@@ -20,13 +27,19 @@ class ConversationManager:
         cls._states[conversation_id] = state
 
     @classmethod
+    def _call_gemini(cls, full_prompt: str) -> str:
+        """Synchronous Gemini API call - runs in thread pool"""
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(full_prompt)
+        return response.text.strip()
+
+    @classmethod
     def generate_response(cls, conversation_id: str, user_message: str, scam_type: str) -> str:
         state = cls.get_state(conversation_id)
         
         # Validate state integrity
         if not state or "history" not in state or "persona" not in state:
             persona = PersonaManager.get_persona(scam_type)
-            # If state exists but is partial (e.g. only intelligence), preserve it
             if not state:
                 state = {}
             
@@ -41,7 +54,6 @@ class ConversationManager:
         recent_history = state["history"][-10:]
         
         # --- STRATEGY ENGINE ---
-        # Calculate turn count (each user message = 1 turn)
         turn_count = len([m for m in state["history"] if m["role"] == "user"])
         
         current_phase = "TRUST_BUILDING"
@@ -68,17 +80,11 @@ class ConversationManager:
         Reply to the user staying completely in character. 
         Keep the response short (1-2 sentences).
         """
-        
-        # print(f"DEBUG: Active Phase: {current_phase}")
 
         try:
             if not GEMINI_API_KEY:
                 return "System Error: Gemini API Key not configured."
 
-            # Configure here to ensure thread safety / latest key usage
-            genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-2.0-flash')
-            
             full_prompt = f"{system_instruction}\n\nCONVERSATION SO FAR:\n"
             for msg in recent_history:
                 role = "Scammer" if msg["role"] == "user" else "You"
@@ -86,8 +92,13 @@ class ConversationManager:
                 full_prompt += f"{role}: {text}\n"
             full_prompt += "You: "
 
-            response = model.generate_content(full_prompt)
-            reply_text = response.text.strip()
+            # Use thread pool with timeout to avoid hanging
+            future = cls._executor.submit(cls._call_gemini, full_prompt)
+            try:
+                reply_text = future.result(timeout=15)  # 15 second timeout
+            except concurrent.futures.TimeoutError:
+                print("Gemini API call timed out after 15 seconds")
+                return "Sorry, I'm having connection issues. Can you repeat that?"
             
             state["history"].append({"role": "model", "parts": [reply_text]})
             cls.update_state(conversation_id, state)
@@ -95,8 +106,5 @@ class ConversationManager:
             return reply_text
             
         except Exception as e:
-            # Log the error for debugging
             print(f"Gemini API Error: {type(e).__name__}: {str(e)}")
-            # Graceful fallback for the hackathon so the system doesn't crash
             return "I am having some network trouble, please wait."
-

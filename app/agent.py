@@ -77,7 +77,7 @@ class ConversationManager:
 
             # Configure here to ensure thread safety / latest key usage
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.0-flash')
             
             full_prompt = f"{system_instruction}\n\nCONVERSATION SO FAR:\n"
             for msg in recent_history:

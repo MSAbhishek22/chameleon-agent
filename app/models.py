@@ -1,6 +1,33 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, List, Any
 
+
+# --- Hackathon-specific models (expected format) ---
+class MessagePayload(BaseModel):
+    sender: str
+    text: str
+    timestamp: int
+
+
+class MetadataPayload(BaseModel):
+    channel: Optional[str] = None
+    language: Optional[str] = None
+    locale: Optional[str] = None
+
+
+class HackathonRequest(BaseModel):
+    sessionId: str
+    message: MessagePayload
+    conversationHistory: List[Dict[str, Any]] = []
+    metadata: Optional[MetadataPayload] = None
+
+
+class HackathonResponse(BaseModel):
+    status: str = "success"
+    reply: str
+
+
+# --- Original internal models ---
 class HoneypotRequest(BaseModel):
     conversation_id: str
     message: str

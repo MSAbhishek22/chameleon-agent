@@ -1,11 +1,16 @@
 import uvicorn
+import asyncio
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from app.models import HoneypotRequest, HoneypotResponse, IntelligenceData
+from app.models import (
+    HoneypotRequest, HoneypotResponse, IntelligenceData,
+    HackathonRequest, HackathonResponse
+)
 from app.config import GEMINI_API_KEY
 from app.detection import ScamDetector
 from app.extraction import IntelligenceExtractor
 from app.agent import ConversationManager
+
 app = FastAPI(title="Agentic Honey-Pot API", version="1.0.0")
 
 app.add_middleware(
@@ -26,6 +31,47 @@ async def verify_api_key(x_api_key: str = Header(...)):
 @app.get("/health")
 def health_check():
     return {"status": "active", "service": "Agentic Honey-Pot"}
+
+
+@app.post("/", response_model=HackathonResponse)
+async def hackathon_endpoint(payload: HackathonRequest, x_api_key: str = Header(...)):
+    """
+    Hackathon-compatible endpoint.
+    Receives messages in the expected format and returns the expected response format.
+    """
+    try:
+        # Extract message text and session ID from hackathon format
+        session_id = payload.sessionId
+        message_text = payload.message.text
+        
+        # Use existing conversation logic
+        state = ConversationManager.get_state(session_id)
+        
+        # Scam Detection
+        is_scam = False
+        scam_type = "default"
+        
+        if state:
+            is_scam = True
+            scam_type = state.get("scam_type", "default")
+        else:
+            is_scam, detected_type, confidence = ScamDetector.analyze(message_text)
+            scam_type = detected_type if detected_type else "default"
+        
+        # Generate response using existing agent
+        agent_response = ConversationManager.generate_response(session_id, message_text, scam_type)
+        
+        return HackathonResponse(
+            status="success",
+            reply=agent_response
+        )
+        
+    except Exception as e:
+        # Return a valid response even on error
+        return HackathonResponse(
+            status="success",
+            reply="I'm sorry, could you please repeat that? I didn't quite understand."
+        )
 
 @app.post("/honeypot", response_model=HoneypotResponse)
 async def honeypot_endpoint(payload: HoneypotRequest, api_key: str = Depends(verify_api_key)):

@@ -77,7 +77,7 @@ class ConversationManager:
 
             # Configure here to ensure thread safety / latest key usage
             genai.configure(api_key=GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-2.5-flash')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
             full_prompt = f"{system_instruction}\n\nCONVERSATION SO FAR:\n"
             for msg in recent_history:
@@ -95,5 +95,8 @@ class ConversationManager:
             return reply_text
             
         except Exception as e:
+            # Log the error for debugging
+            print(f"Gemini API Error: {type(e).__name__}: {str(e)}")
             # Graceful fallback for the hackathon so the system doesn't crash
             return "I am having some network trouble, please wait."
+

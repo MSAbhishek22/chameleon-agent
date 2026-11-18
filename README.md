@@ -61,6 +61,22 @@ Like a chameleon, it changes colour to match whoever is hunting it.
 - [ ] Expand persona library with regional-language (Hindi-first) variants.
 - [ ] Package the detector as a standalone library other apps can embed.
 
+## 🚀 How to Run
+
+```bash
+pip install -r requirements.txt
+```
+
+Set your Gemini API key (`GEMINI_API_KEY` in a `.env` file), then start the API:
+
+```bash
+uvicorn main:app --reload
+```
+
+- `POST /honeypot` — send a message and get the honeypot's in-character reply.
+- `GET /health` — service health check.
+- Deploy: see `DEPLOYMENT.md` for the step-by-step Render guide.
+
 ## 🔗 More From The Builder
 
 **Built by [M S Abhishek](https://github.com/MSAbhishek22)** — agents that protect people are a running theme here; see also ClaimLens and Verity.
